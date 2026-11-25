@@ -1,0 +1,54 @@
+name: RJ Build
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "rj-*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container: ghcr.io/qmk/qmk_cli
+
+    steps:
+    - name: Disable safe.directory check
+      run: git config --global --add safe.directory '*'
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install Dependencies
+      run: |
+        pip3 install -r requirements-dev.txt
+        qmk setup --home . --yes
+
+    - name: Host Tests
+      run: sh rj/test.sh
+
+    - name: Set output
+      id: vars
+      run: echo "tag=${GITHUB_REF#refs/*/rj-}" >> $GITHUB_OUTPUT
+
+    - name: Build
+      env:
+        RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+      run: |
+        qmk compile -kb shortcut/bridge75/ansi_min -km rj
+        mv shortcut_bridge75_ansi_min_rj.bin "shortcut_bridge75_ansi_min_rj_$RELEASE_VERSION.bin"
+        python3 rj/gen_via_json.py keyboards/shortcut/bridge75/ansi_min/keyboard.json bridge75_ansi_min_rj_via.json
+        cp keyboards/shortcut/bridge75/ansi_min/keymaps/rj/README.md README_rj.md
+        ls -al *.bin *.json *.md
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        generate_release_notes: true
+        files: |
+          shortcut_bridge75_ansi_min_rj_${{ steps.vars.outputs.tag }}.bin
+          bridge75_ansi_min_rj_via.json
+          README_rj.md

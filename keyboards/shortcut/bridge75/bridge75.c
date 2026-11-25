@@ -6,6 +6,34 @@
 #include QMK_KEYBOARD_H
 #include "bridge75.h"
 #include "bootloader.h"
+#include "mash_guard.h"
+
+static uint8_t keys_down(void) {
+    uint8_t n = 0;
+    for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+        n += __builtin_popcount(matrix_get_row(row));
+    }
+    return n;
+}
+
+static bool mash_latched = false;
+
+static bool    conn_hold_active = false;
+static bool    conn_hold_mashed = false;
+static uint8_t conn_hold_prev   = 0;
+
+static matrix_row_t mash_blocked[MATRIX_ROWS];
+
+static void mash_update(void) {
+    uint8_t n    = keys_down();
+    mash_latched = mash_latch_next(mash_latched, n);
+    if (conn_hold_active && n >= MASH_UNDO_MIN_KEYS) conn_hold_mashed = true;
+}
+
+bool bridge75_mash_active(void) {
+    mash_update();
+    return mash_latched;
+}
 
 #ifndef BLINK_BASE
 #define BLINK_BASE 128
@@ -16,6 +44,11 @@
 
 #ifdef WIRELESS_ENABLE
 #include "wireless.h"
+#ifdef BRIDGE75_WAKE_REPLAY
+#include "wake_replay.h"
+bool           bridge75_wake_replay = true;
+static uint8_t wake_replay_dev      = 0;
+#endif
 
 typedef union {
     uint32_t raw;
@@ -36,6 +69,9 @@ confinfo_t confinfo;
 // USB mode RGB sleep state tracking
 static bool usb_rgb_off = false;
 static bool usb_rgb_was_enabled = false;
+
+uint16_t bridge75_rgb_hard_timeout_min = BRIDGE75_RGB_HARD_TIMEOUT_MIN;
+static uint32_t last_key_press_time = 0;
 
 typedef struct {
     uint32_t press_time;
@@ -66,7 +102,10 @@ void md_send_devinfo(const char *name);
 void wireless_task(void);
 bool smsg_is_busy(void);
 
+bool bridge75_cold_boot = false;
+
 void eeconfig_init_kb(void) {
+    confinfo.raw  = 0;
     confinfo.devs = DEVS_USB;
     eeconfig_update_kb(confinfo.raw);
     eeconfig_init_user();
@@ -84,9 +123,6 @@ void early_hardware_init_post(void) {
 
 void keyboard_post_init_kb(void) {
     confinfo.raw = eeconfig_read_kb();
-    if (!confinfo.raw) {
-        eeconfig_init_kb();
-    }
 
     // Set USB_POWER_EN_PIN state before enabling the output to avoid instability
     if (confinfo.devs == DEVS_USB && gpio_read_pin(BT_CABLE_PIN)) {
@@ -103,6 +139,13 @@ void keyboard_post_init_kb(void) {
     post_init_timer = timer_read32();
 
     keyboard_post_init_user();
+
+#ifdef BRIDGE75_WAKE_REPLAY
+    if (!bridge75_cold_boot && confinfo.devs != DEVS_USB && bridge75_wake_replay) {
+        wake_replay_arm(timer_read32());
+        wake_replay_dev = confinfo.devs;
+    }
+#endif
 }
 
 void usb_power_connect(void) {
@@ -114,7 +157,10 @@ void usb_power_disconnect(void) {
     gpio_write_pin_high(USB_POWER_EN_PIN);
 }
 
+__attribute__((weak)) void bridge75_suspend_fade(void) {}
+
 void suspend_power_down_kb(void) {
+    bridge75_suspend_fade();
     gpio_write_pin_high(LED_POWER_EN_PIN);
     suspend_power_down_user();
 }
@@ -127,6 +173,10 @@ void suspend_wakeup_init_kb(void) {
 
     wireless_devs_change(wireless_get_current_devs(), wireless_get_current_devs(), false);
     suspend_wakeup_init_user();
+}
+
+bool bridge75_keep_awake(void) {
+    return confinfo.sleep_off;
 }
 
 bool lpwr_is_allow_timeout_hook(void) {
@@ -142,7 +192,13 @@ void last_matrix_activity_trigger(void);
 
 // Check for long-press on wireless keys to trigger pairing mode
 static void long_pressed_keys_hook(void) {
+    mash_update();
+    bool mashed = mash_latched; 
     for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
+        if (mashed) {
+            long_pressed_keys[i].press_time = 0;
+            continue;
+        }
         if ((long_pressed_keys[i].press_time != 0) &&
             (timer_elapsed32(long_pressed_keys[i].press_time) >= LONG_PRESS_TIME_MS)) {
             // 3 second hold detected - trigger pairing mode (reset=true)
@@ -163,18 +219,49 @@ void wireless_housekeeping_task_kb(void) {
 
     // USB mode RGB timeout - disable RGB and cut LED power after inactivity
     // This matches the reference implementation behavior when cable is connected
-    if (gpio_read_pin(BT_CABLE_PIN) && !usb_rgb_off && !confinfo.sleep_off) {
-        if (last_input_activity_elapsed() >= USB_RGB_TIMEOUT_MS) {
-            usb_rgb_was_enabled = rgb_matrix_is_enabled();
-            rgb_matrix_disable_noeeprom();
-            gpio_write_pin_high(LED_POWER_EN_PIN);
-            usb_rgb_off = true;
-        }
+    bool usb_timeout = gpio_read_pin(BT_CABLE_PIN) && !confinfo.sleep_off && last_input_activity_elapsed() >= USB_RGB_TIMEOUT_MS;
+    bool hard_timeout = bridge75_rgb_hard_timeout_min && timer_elapsed32(last_key_press_time) >= (uint32_t)bridge75_rgb_hard_timeout_min * 60000UL;
+    if (!usb_rgb_off && (usb_timeout || hard_timeout)) {
+        usb_rgb_was_enabled = rgb_matrix_is_enabled();
+        rgb_matrix_disable_noeeprom();
+        gpio_write_pin_high(LED_POWER_EN_PIN);
+        usb_rgb_off = true;
     }
 
     // Check for long-press on wireless keys
     long_pressed_keys_hook();
+
+#ifdef BRIDGE75_WAKE_REPLAY
+    if (wake_replay_armed()) {
+        if (wireless_get_current_devs() != wake_replay_dev) {
+            wake_replay_disarm(); 
+        } else {
+            extern host_driver_t wireless_driver;
+            wake_replay_poll(*md_getp_state() == MD_STATE_CONNECTED, timer_read32(), wireless_driver.send_keyboard);
+        }
+    }
+#endif
 }
+
+#ifdef BRIDGE75_WAKE_REPLAY
+void wireless_send_keyboard(report_keyboard_t *report) {
+    if (MD_STATE_PAIRING == *md_getp_state()) {
+        return;
+    }
+    uint8_t wls_report_kb[MD_SND_CMD_KB_LEN] = {0};
+
+    if (*md_getp_state() != MD_STATE_CONNECTED) {
+        wake_replay_capture(report, timer_read32());
+        wireless_devs_change(wireless_get_current_devs(), wireless_get_current_devs(), false);
+        return;
+    }
+
+    if (report != NULL) {
+        memcpy(wls_report_kb, (uint8_t *)&report->mods, WLS_KEYBOARD_REPORT_KEYS + 2);
+    }
+    md_send_kb(wls_report_kb);
+}
+#endif
 
 void wireless_post_task(void) {
     if (post_init_timer && timer_elapsed32(post_init_timer) >= 100) {
@@ -221,6 +308,10 @@ void md_devs_change(uint8_t devs, bool reset) {
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (record->event.pressed) {
+        last_key_press_time = timer_read32();
+    }
+
     // Wake from USB RGB timeout on any key press
     if (record->event.pressed && usb_rgb_off) {
         gpio_write_pin_low(LED_POWER_EN_PIN);
@@ -228,6 +319,22 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             rgb_matrix_enable_noeeprom();
         }
         usb_rgb_off = false;
+    }
+
+    mash_update();
+    {
+        uint8_t      row = record->event.key.row, col = record->event.key.col;
+        matrix_row_t bit = (matrix_row_t)1 << col;
+        if (row < MATRIX_ROWS) {
+            if (mash_guard_blocks(keycode, record->event.pressed, mash_latched ? 0xFF : keys_down())) {
+                mash_blocked[row] |= bit;
+                return false;
+            }
+            if (!record->event.pressed && (mash_blocked[row] & bit)) {
+                mash_blocked[row] &= ~bit;
+                return false;
+            }
+        }
     }
 
     if (process_record_user(keycode, record) != true) {
@@ -244,14 +351,44 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         }
-        case BT_USB: {
-            wireless_devs_change(wireless_get_current_devs(), DEVS_USB, false);
-            return false;
-        }
+        case BT_SW:
+        case BT_USB:
         case BT_HOST1:
         case BT_HOST2:
         case BT_HOST3:
         case BT_2_4G: {
+            if (record->event.pressed) {
+                conn_hold_active = true;
+                conn_hold_mashed = false;
+                conn_hold_prev   = wireless_get_current_devs();
+            } else if (conn_hold_active) {
+                conn_hold_active = false;
+                // keys piled on while holding (board face down), undo the switch
+                if (conn_hold_mashed && wireless_get_current_devs() != conn_hold_prev) {
+                    wireless_devs_change(wireless_get_current_devs(), conn_hold_prev, false);
+                }
+            }
+            if (keycode == BT_USB) {
+                if (record->event.pressed) {
+                    wireless_devs_change(wireless_get_current_devs(), DEVS_USB, false);
+                }
+                return false;
+            }
+            if (keycode == BT_SW) {
+                long_pressed_key_t *dongle = &long_pressed_keys[0];
+                for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
+                    if (long_pressed_keys[i].devs == DEVS_2G4) dongle = &long_pressed_keys[i];
+                }
+                if (record->event.pressed) {
+                    uint8_t cur = wireless_get_current_devs();
+                    uint8_t to  = cur == DEVS_USB ? DEVS_2G4 : (cur == DEVS_2G4 ? DEVS_USB : (gpio_read_pin(BT_CABLE_PIN) ? DEVS_USB : DEVS_2G4));
+                    wireless_devs_change(cur, to, false);
+                    dongle->press_time = (to == DEVS_2G4) ? timer_read32() : 0;
+                } else {
+                    dongle->press_time = 0;
+                }
+                return false;
+            }
             // Timer-based long-press detection for wireless pairing
             // Short press: switch device immediately
             // Long press (3s): enter pairing mode (handled by long_pressed_keys_hook)
@@ -500,7 +637,8 @@ void wireless_send_nkro(report_nkro_t *report) {
 // - Cold boot: GPREG0 != WAKEUP_MAGIC → run normal bootmagic (can enter bootloader)
 // - Wake from sleep: GPREG0 == WAKEUP_MAGIC → skip bootmagic for fast restart
 void bootmagic_scan(void) {
-    if (PWR->GPREG0 != WAKEUP_MAGIC) {
+    bridge75_cold_boot = (PWR->GPREG0 != WAKEUP_MAGIC);
+    if (bridge75_cold_boot) {
         // Cold boot - run normal bootmagic check
         matrix_scan();
 #if defined(DEBOUNCE) && DEBOUNCE > 0

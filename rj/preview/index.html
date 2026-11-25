@@ -1,0 +1,227 @@
+<title>Bridge75 Light Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #0b0d10;
+  --panel: #12161b;
+  --line: #222a32;
+  --fg: #e7ecf1;
+  --muted: #8b97a3;
+  --accent: #9fd3ff;
+  --cap: #1a1f25;
+  --cap-edge: #2a323b;
+  --new: #ffc46b;
+  --display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--display); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+header { display: grid; gap: 6px; }
+h1 { font-size: clamp(22px, 3.4vw, 32px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 68ch; line-height: 1.5; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab, .chip { font: 500 13px var(--mono); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.tab[aria-selected="true"], .chip[aria-pressed="true"] { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+.tab:focus-visible, .chip:focus-visible, .item:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stage { background: radial-gradient(120% 140% at 50% 0%, #161b21 0%, var(--bg) 70%); border: 1px solid var(--line); border-radius: 14px; padding: clamp(14px, 3vw, 30px); display: grid; gap: 16px; }
+.board { position: relative; width: 100%; aspect-ratio: 16 / 1.35; max-width: 100%; }
+.key { position: absolute; top: 8%; height: 84%; width: calc(100% / 16 * 0.9); border-radius: 12%; background: var(--cap); border: 1px solid var(--cap-edge); box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); overflow: hidden; }
+.key .led { position: absolute; inset: -40% -30% auto -30%; height: 120%; border-radius: 50%; filter: blur(6px); opacity: .95; }
+.key .lbl { position: absolute; left: 0; right: 0; bottom: 10%; text-align: center; font: 500 clamp(7px, 1.1vw, 11px) var(--mono); color: rgba(231,236,241,.55); }
+.halo { position: absolute; top: -18%; height: 60%; width: calc(100% / 16 * 1.4); border-radius: 50%; filter: blur(14px); pointer-events: none; }
+.meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.now { display: grid; gap: 3px; min-width: 0; }
+.now b { font-size: 18px; }
+.now span { color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.bright { display: flex; align-items: center; gap: 8px; font: 12px var(--mono); color: var(--muted); }
+.bright input { width: 120px; accent-color: var(--fg); }
+.prog { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--muted); }
+
+.list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.item { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--fg); cursor: pointer; display: grid; gap: 4px; font: inherit; min-width: 0; }
+.item[aria-pressed="true"] { border-color: var(--fg); }
+.item .t { display: flex; gap: 8px; align-items: baseline; font-weight: 600; }
+.item .d { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.badge { font: 500 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--new); }
+.badge.kept { color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.label { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.note { border-top: 1px solid var(--line); padding-top: 12px; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.note b { color: var(--fg); font-weight: 600; display: block; margin-bottom: 4px; }
+.err { color: var(--new); font: 13px var(--mono); }
+@media (prefers-reduced-motion: reduce) { .key .led, .halo { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Bridge75 Light Lab</h1>
+    <p class="sub">Frames come from the firmware's own effect code compiled on the PC, at the board's 14 LEDs (Esc, F1&ndash;F12, Del). LED brightness is converted for screens, so dim tails look the way they do on the keyboard.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-fx" aria-selected="true">Light effects</button>
+    <button class="tab" role="tab" id="tab-anim" aria-selected="false">Startup animations</button>
+  </div>
+
+  <section class="stage" aria-label="Preview">
+    <div class="board" id="board"></div>
+    <div class="prog"><i id="prog"></i></div>
+    <div class="meta">
+      <div class="now"><b id="now-name">Loading&hellip;</b><span id="now-desc"></span></div>
+      <div class="controls">
+        <div class="row" id="colors"></div>
+        <label class="bright" for="bri">Brightness <input type="range" id="bri" min="40" max="200" value="150"><span id="bri-v">150</span></label>
+      </div>
+    </div>
+  </section>
+
+  <section id="pane-fx" class="list" aria-label="Light effects"></section>
+  <section id="pane-anim" class="list" aria-label="Startup animations" hidden></section>
+
+  <section class="notes">
+    <div class="note"><b>Leaving the VIA list</b>Cycle Up/Down and Rainbow Chevron (copies of Cycle All and Left/Right on one row), Pinwheel, Spiral, Out/In Dual, Raindrops, Breathing (Calm Breath replaces it), and Heatmap, Reactive and Multisplash, which only react to F-key presses.</div>
+    <div class="note"><b>Staying</b>Solid Color, Cycle All, Cycle Left/Right, Cycle Out/In, Dual Beacon and Rainbow Beacon. Changing effect now crossfades over 0.4 s instead of cutting.</div>
+    <div class="note"><b>Typing effects</b>Ripples and Glow here are driven by a scripted typing session of about 8 keys a second. On the board every key counts, mapped to the spot on the bar above it.</div>
+  </section>
+</div>
+
+<script>
+const KEYS = [["Esc",0],["F1",1.5],["F2",2.5],["F3",3.5],["F4",4.5],["F5",6],["F6",7],["F7",8],["F8",9],["F9",10.5],["F10",11.5],["F11",12.5],["F12",13.5],["Del",15]];
+const FX = [
+  {id:0, name:"Aurora", d:"Green, teal and violet curtains drifting slowly across the bar."},
+  {id:1, name:"Ocean", d:"Three swells of blue and teal rolling at their own pace, with white caps now and then."},
+  {id:2, name:"Twinkle", d:"Keys glow in and fade out at random, each on its own clock. Uses your VIA colour.", c:true},
+  {id:3, name:"Ember", d:"A bed of coals: heat drifts and flares, never burns out."},
+  {id:4, name:"Lava", d:"Three warm blobs on slow orbits that merge and split."},
+  {id:5, name:"Calm Breath", d:"A 5.6 s breath that starts in the middle, never fully dark. Uses your VIA colour.", c:true},
+  {id:6, name:"Colorwaves", d:"Hue and brightness waves drifting against each other."},
+  {id:7, name:"Typing Ripples", d:"Each key press sends a soft ring out from the spot above it. Uses your VIA colour.", c:true},
+  {id:8, name:"Typing Glow", d:"Typing warms the bar above your hands; it cools when you stop. Uses your VIA colour.", c:true},
+];
+const ANIMS = {1:["Comets","Two white comets meet in the middle and run back out."],2:["Rainbow Wipe","A rainbow wipes in, then out."],3:["Larson Scanner","The classic scanner eye, twice."],4:["Meteor","A meteor with a crumbling trail."],5:["Curtain","Your profile colour opens from the centre."],6:["Ignition","Two sparks race in from the ends, meet, and bloom over the whole bar.",1],7:["Fire","Fire lights in the centre and burns out."],8:["Power Up","Red to green charge bar, then a white flash."],9:["Welcome","Car light-bar welcome: a soft fill sweeps across, lifts, then sweeps off.",1],10:["Ripple","Drops land and ring outwards."],11:["Sunrise","Deep red to warm white, the middle rising first.",1],12:["Bounce","Two balls bouncing under gravity."],13:["Heartbeat","A lub-dub pulse from the centre."]};
+const ANIM_ORDER = [9,6,11,1,5,2,3,4,7,8,10,12,13];
+const PRESETS = ["Blue","Purple","Red"];
+const AMODES = ["Auto","Profile","Custom","Rainbow"];
+
+const board = document.getElementById("board");
+const leds = [], halos = [];
+KEYS.forEach(([name, x]) => {
+  const h = document.createElement("div"); h.className = "halo"; h.style.left = `calc(${(x + 0.5) / 16 * 100}% - 100% / 16 * 0.7)`; board.appendChild(h); halos.push(h);
+  const k = document.createElement("div"); k.className = "key"; k.style.left = `calc(${x / 16 * 100}% + 100% / 16 * 0.05)`;
+  const l = document.createElement("div"); l.className = "led"; k.appendChild(l);
+  const t = document.createElement("div"); t.className = "lbl"; t.textContent = name; k.appendChild(t);
+  board.appendChild(k); leds.push(l);
+});
+
+const enc = new Uint8Array(256).map((_, v) => Math.round(255 * Math.pow(v / 255, 1 / 2.2)));
+let bri = 150;
+function paint(rgb) {
+  for (let i = 0; i < 14; i++) {
+    const r = enc[rgb[i*3]], g = enc[rgb[i*3+1]], b = enc[rgb[i*3+2]];
+    const c = `rgb(${r},${g},${b})`;
+    leds[i].style.background = `radial-gradient(closest-side, ${c}, rgba(${r},${g},${b},0.35) 60%, transparent)`;
+    halos[i].style.background = `rgba(${r},${g},${b},0.38)`;
+  }
+}
+
+let data = null, mode = "fx", fxSel = 0, preset = 0, animSel = 9, amode = 0, frames = [], step = 33, startT = 0, scaleFx = true;
+function b64(s) { const bin = atob(s); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+function hexFrames(list) { return list.map(h => { const u = new Uint8Array(42); for (let i = 0; i < 42; i++) u[i] = parseInt(h.substr(i*2, 2), 16); return u; }); }
+
+function load() {
+  if (!data) return;
+  if (mode === "fx") {
+    const f = FX[fxSel], arr = data.fx.fx[f.id], u = b64(arr[f.c ? preset : 0]);
+    frames = []; for (let i = 0; i + 42 <= u.length; i += 42) frames.push(u.subarray(i, i + 42));
+    step = data.fx.step; scaleFx = true;
+    document.getElementById("now-name").textContent = f.name;
+    document.getElementById("now-desc").textContent = f.d;
+  } else {
+    const a = data.anims.anims[animSel];
+    frames = hexFrames(a.modes[amode]); step = data.anims.step; scaleFx = false;
+    document.getElementById("now-name").textContent = ANIMS[animSel][0];
+    document.getElementById("now-desc").textContent = ANIMS[animSel][1] + " Plays once at power-up, then your effect fades in.";
+  }
+  startT = performance.now();
+  renderChips();
+}
+
+function renderChips() {
+  const box = document.getElementById("colors"); box.innerHTML = "";
+  const opts = mode === "fx" ? (FX[fxSel].c ? PRESETS : []) : AMODES;
+  if (!opts.length) return;
+  const lab = document.createElement("span"); lab.className = "label"; lab.textContent = mode === "fx" ? "VIA colour" : "Colour"; box.appendChild(lab);
+  opts.forEach((name, i) => {
+    const b = document.createElement("button"); b.className = "chip"; b.id = `chip-${mode}-${i}`; b.textContent = name;
+    b.setAttribute("aria-pressed", (mode === "fx" ? preset : amode) === i);
+    b.onclick = () => { if (mode === "fx") preset = i; else amode = i; load(); };
+    box.appendChild(b);
+  });
+}
+
+function buildLists() {
+  const pf = document.getElementById("pane-fx");
+  FX.forEach((f, i) => {
+    const b = document.createElement("button"); b.className = "item"; b.id = `fx-${f.id}`;
+    b.innerHTML = `<span class="t">${f.name}<span class="badge">New</span></span><span class="d">${f.d}</span>`;
+    b.onclick = () => { fxSel = i; mark(); load(); };
+    pf.appendChild(b);
+  });
+  const pa = document.getElementById("pane-anim");
+  ANIM_ORDER.forEach(id => {
+    const [n, d, isNew] = ANIMS[id];
+    const b = document.createElement("button"); b.className = "item"; b.id = `anim-${id}`;
+    b.innerHTML = `<span class="t">${n}${isNew ? '<span class="badge">New</span>' : '<span class="badge kept">Kept</span>'}</span><span class="d">${d}</span>`;
+    b.onclick = () => { animSel = id; mark(); load(); };
+    pa.appendChild(b);
+  });
+  mark();
+}
+function mark() {
+  document.querySelectorAll("#pane-fx .item").forEach((b, i) => b.setAttribute("aria-pressed", i === fxSel));
+  document.querySelectorAll("#pane-anim .item").forEach(b => b.setAttribute("aria-pressed", b.id === `anim-${animSel}`));
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById("tab-fx").setAttribute("aria-selected", m === "fx");
+  document.getElementById("tab-anim").setAttribute("aria-selected", m === "anim");
+  document.getElementById("pane-fx").hidden = m !== "fx";
+  document.getElementById("pane-anim").hidden = m !== "anim";
+  load();
+}
+document.getElementById("tab-fx").onclick = () => setMode("fx");
+document.getElementById("tab-anim").onclick = () => setMode("anim");
+document.getElementById("bri").oninput = e => { bri = +e.target.value; document.getElementById("bri-v").textContent = bri; };
+
+const tmp = new Uint8Array(42), prog = document.getElementById("prog");
+function tick(now) {
+  if (frames.length) {
+    const total = frames.length * step;
+    let e = now - startT;
+    const hold = mode === "anim" ? 900 : 0;
+    if (e >= total + hold) { startT = now; e = 0; }
+    const n = Math.min(frames.length - 1, Math.floor(e / step));
+    const f = e < total ? frames[n] : tmp.fill(0);
+    const k = scaleFx ? bri / 255 : 1;
+    const out = new Uint8Array(42);
+    for (let i = 0; i < 42; i++) out[i] = Math.round(f[i] * k);
+    paint(out);
+    prog.style.width = `${Math.min(100, e / total * 100)}%`;
+  }
+  requestAnimationFrame(tick);
+}
+
+Promise.all([fetch("fx.json").then(r => r.json()), fetch("anims.json").then(r => r.json())])
+  .then(([fx, anims]) => { data = {fx, anims}; buildLists(); load(); })
+  .catch(err => { document.getElementById("now-name").textContent = "Couldn't load the frames"; document.getElementById("now-desc").innerHTML = `<span class="err">${err.message}. Reload the page to try again.</span>`; });
+requestAnimationFrame(tick);
+</script>

@@ -176,6 +176,7 @@ static void md_receive_msg_task(void) {
             md_send_ack();
 
             if (md_receive_process_kb(md_rev_payload, data_count) != true) {
+                data_count = 0;
                 return;
             }
 
@@ -233,7 +234,6 @@ static void md_send_pkt_task(void) {
     switch (smsg_get_state()) {
         case smsg_state_busy: {
             if (sync_timer_elapsed32(smsg_timer) > (MD_SNED_PKT_TIMEOUT)) {
-                smsg_retry = 0;
                 smsg_set_state(smsg_state_retry);
             }
         } break;
@@ -245,6 +245,7 @@ static void md_send_pkt_task(void) {
             smsg_set_state(smsg_state_free);
         } break;
         case smsg_state_replied: {
+            smsg_retry = 0;
             smsg_pop();
             smsg_set_state(smsg_state_free);
         } // break;
@@ -274,8 +275,8 @@ void md_init(void) {
 
 void md_main_task(void) {
 
-    md_send_pkt_task();
     md_receive_msg_task();
+    md_send_pkt_task();
 }
 
 uint8_t *md_getp_state(void) {
@@ -430,7 +431,7 @@ void md_send_vpid(uint16_t vid, uint16_t pid) {
     uint8_t sdata[4 + 2] = {0x00};
     uint32_t vpid;
 
-    vpid = (pid << 16) | vid;
+    vpid = ((uint32_t)pid << 16) | vid;
 
     sdata[0] = MD_SND_CMD_VPID;
     memcpy(&sdata[1], &vpid, sizeof(vpid));

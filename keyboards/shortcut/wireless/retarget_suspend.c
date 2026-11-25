@@ -19,12 +19,25 @@
 #include "quantum.h"
 #include "wireless.h"
 
+static bool usb_cable_present(void) {
+#ifdef BT_CABLE_PIN
+    return gpio_read_pin(BT_CABLE_PIN);
+#else
+    return true;
+#endif
+}
+
 void housekeeping_task_usb_suspend(void) {
 
-    if (wireless_get_current_devs() == DEVS_USB) {
+    // cable mode with no cable look same as host sleep, only trust suspend when cable is in
+    if (wireless_get_current_devs() == DEVS_USB && usb_cable_present()) {
         if ((USB_DRIVER.state == USB_SUSPENDED) && (USB_DRIVER.saved_state == USB_ACTIVE)) {
             print("[s]");
             while (USB_DRIVER.state == USB_SUSPENDED) {
+                if (!usb_cable_present()) {
+                    suspend_wakeup_init();
+                    return;
+                }
                 /* Do this in the suspended state */
                 suspend_power_down(); // on AVR this deep sleeps for 15ms
                 /* Remote wakeup */

@@ -1,0 +1,788 @@
+{
+  "name": "Bridge75: Jscio Edition",
+  "vendorId": "0xFFFE",
+  "productId": "0x003E",
+  "matrix": {
+    "rows": 6,
+    "cols": 15
+  },
+  "keycodes": [
+    "qmk_rgb_matrix_keycodes"
+  ],
+  "menus": [
+    {
+      "label": "Lighting",
+      "content": [
+        {
+          "label": "Effect (F1-F12 row)",
+          "content": [
+            {
+              "label": "Brightness",
+              "type": "range",
+              "options": [
+                0,
+                255
+              ],
+              "content": [
+                "id_qmk_rgb_matrix_brightness",
+                3,
+                1
+              ]
+            },
+            {
+              "label": "Effect",
+              "type": "dropdown",
+              "content": [
+                "id_qmk_rgb_matrix_effect",
+                3,
+                2
+              ],
+              "options": [
+                [
+                  "All Off (hides indicators too)",
+                  0
+                ],
+                [
+                  "Solid Color",
+                  1
+                ],
+                [
+                  "Cycle All",
+                  2
+                ],
+                [
+                  "Cycle Left/Right",
+                  3
+                ],
+                [
+                  "Cycle Out/In",
+                  4
+                ],
+                [
+                  "Dual Beacon",
+                  5
+                ],
+                [
+                  "Rainbow Beacon",
+                  6
+                ],
+                [
+                  "Aurora",
+                  7
+                ],
+                [
+                  "Ocean",
+                  8
+                ],
+                [
+                  "Twinkle",
+                  9
+                ],
+                [
+                  "Ember",
+                  10
+                ],
+                [
+                  "Lava",
+                  11
+                ],
+                [
+                  "Calm Breath",
+                  12
+                ],
+                [
+                  "Colorwaves",
+                  13
+                ],
+                [
+                  "Typing Ripples",
+                  14
+                ],
+                [
+                  "Typing Glow",
+                  15
+                ]
+              ]
+            },
+            {
+              "showIf": "{id_qmk_rgb_matrix_effect} != 0 && {id_qmk_rgb_matrix_effect} != 1",
+              "label": "Effect Speed",
+              "type": "range",
+              "options": [
+                0,
+                255
+              ],
+              "content": [
+                "id_qmk_rgb_matrix_effect_speed",
+                3,
+                3
+              ]
+            },
+            {
+              "showIf": "{id_qmk_rgb_matrix_effect} == 1 || {id_qmk_rgb_matrix_effect} == 9 || {id_qmk_rgb_matrix_effect} == 12 || {id_qmk_rgb_matrix_effect} == 14 || {id_qmk_rgb_matrix_effect} == 15",
+              "label": "Color",
+              "type": "color",
+              "content": [
+                "id_qmk_rgb_matrix_color",
+                3,
+                4
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Bridge75 Settings",
+      "content": [
+        {
+          "label": "Profiles",
+          "content": [
+            {
+              "label": "Active profile",
+              "type": "dropdown",
+              "content": [
+                "id_rj_profile",
+                0,
+                1
+              ],
+              "options": [
+                [
+                  "Public",
+                  0
+                ],
+                [
+                  "Personal",
+                  1
+                ],
+                [
+                  "Gaming",
+                  2
+                ]
+              ]
+            },
+            {
+              "label": "Public colour",
+              "type": "color",
+              "content": [
+                "id_rj_color_pub",
+                0,
+                7
+              ]
+            },
+            {
+              "label": "Personal colour",
+              "type": "color",
+              "content": [
+                "id_rj_color_per",
+                0,
+                8
+              ]
+            },
+            {
+              "label": "Gaming colour",
+              "type": "color",
+              "content": [
+                "id_rj_color_gam",
+                0,
+                9
+              ]
+            },
+            {
+              "label": "Profile colour on Delete",
+              "type": "dropdown",
+              "content": [
+                "id_rj_del_mode",
+                0,
+                2
+              ],
+              "options": [
+                [
+                  "While FN held / 2s after switching",
+                  0
+                ],
+                [
+                  "Always",
+                  1
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Gaming (SOCD)",
+          "content": [
+            {
+              "label": "WASD SOCD mode (Gaming profile)",
+              "type": "dropdown",
+              "content": [
+                "id_rj_socd_mode",
+                0,
+                3
+              ],
+              "options": [
+                [
+                  "Last input wins",
+                  0
+                ],
+                [
+                  "Neutral (cancel)",
+                  1
+                ],
+                [
+                  "First input wins",
+                  2
+                ],
+                [
+                  "Off",
+                  3
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Startup Animation",
+          "content": [
+            {
+              "label": "Animation (plays on power-up)",
+              "type": "dropdown",
+              "content": [
+                "id_rj_startup",
+                0,
+                4
+              ],
+              "options": [
+                [
+                  "Off",
+                  0
+                ],
+                [
+                  "Welcome",
+                  9
+                ],
+                [
+                  "Ignition",
+                  6
+                ],
+                [
+                  "Sunrise",
+                  11
+                ],
+                [
+                  "Comets",
+                  1
+                ],
+                [
+                  "Curtain",
+                  5
+                ],
+                [
+                  "Rainbow Wipe",
+                  2
+                ],
+                [
+                  "Larson Scanner",
+                  3
+                ],
+                [
+                  "Meteor",
+                  4
+                ],
+                [
+                  "Fire",
+                  7
+                ],
+                [
+                  "Power Up",
+                  8
+                ],
+                [
+                  "Ripple",
+                  10
+                ],
+                [
+                  "Bounce",
+                  12
+                ],
+                [
+                  "Heartbeat",
+                  13
+                ],
+                [
+                  "Shuffle (new one every power-up)",
+                  14
+                ]
+              ]
+            },
+            {
+              "showIf": "{id_rj_startup} != 0",
+              "label": "Colour",
+              "type": "dropdown",
+              "content": [
+                "id_rj_anim_color",
+                0,
+                10
+              ],
+              "options": [
+                [
+                  "Auto (animation's own)",
+                  0
+                ],
+                [
+                  "Profile colour",
+                  1
+                ],
+                [
+                  "Custom",
+                  2
+                ],
+                [
+                  "Rainbow",
+                  3
+                ]
+              ]
+            },
+            {
+              "showIf": "{id_rj_startup} != 0 && {id_rj_anim_color} == 2",
+              "label": "Custom colour",
+              "type": "color",
+              "content": [
+                "id_rj_anim_custom",
+                0,
+                11
+              ]
+            },
+            {
+              "label": "Preview",
+              "type": "button",
+              "options": [
+                1
+              ],
+              "content": [
+                "id_rj_anim_play",
+                0,
+                12
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Light Behaviour",
+          "content": [
+            {
+              "label": "Effect brightness while FN is held (%)",
+              "type": "range",
+              "options": [
+                0,
+                100
+              ],
+              "content": [
+                "id_rj_fn_dim_pct",
+                0,
+                21
+              ]
+            },
+            {
+              "label": "Dim when idle",
+              "type": "toggle",
+              "content": [
+                "id_rj_idle_dim",
+                0,
+                13
+              ]
+            },
+            {
+              "showIf": "{id_rj_idle_dim} == 1",
+              "label": "Idle brightness (%)",
+              "type": "range",
+              "options": [
+                5,
+                95
+              ],
+              "content": [
+                "id_rj_idle_dim_pct",
+                0,
+                14
+              ]
+            },
+            {
+              "showIf": "{id_rj_idle_dim} == 1",
+              "label": "Dim after (seconds)",
+              "type": "range",
+              "options": [
+                5,
+                50
+              ],
+              "content": [
+                "id_rj_idle_dim_s",
+                0,
+                15
+              ]
+            },
+            {
+              "label": "Fade out before sleep / timeout",
+              "type": "toggle",
+              "content": [
+                "id_rj_sleep_fade",
+                0,
+                19
+              ]
+            },
+            {
+              "label": "Brightness / colour HUD on F1-F12",
+              "type": "toggle",
+              "content": [
+                "id_rj_hud",
+                0,
+                16
+              ]
+            },
+            {
+              "label": "Colour sweep on profile switch",
+              "type": "toggle",
+              "content": [
+                "id_rj_sweep",
+                0,
+                17
+              ]
+            },
+            {
+              "label": "Pulse when a connection comes up",
+              "type": "toggle",
+              "content": [
+                "id_rj_conn_pulse",
+                0,
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Navigation (FN + HJKL)",
+          "content": [
+            {
+              "label": "Hide FN lights while navigating",
+              "type": "toggle",
+              "content": [
+                "id_rj_nav_focus",
+                0,
+                22
+              ]
+            },
+            {
+              "showIf": "{id_rj_nav_focus} == 1",
+              "label": "Effect while navigating",
+              "type": "dropdown",
+              "content": [
+                "id_rj_nav_fx",
+                0,
+                23
+              ],
+              "options": [
+                [
+                  "Dimmed (like FN)",
+                  0
+                ],
+                [
+                  "Normal",
+                  1
+                ],
+                [
+                  "Off",
+                  2
+                ]
+              ]
+            },
+            {
+              "showIf": "{id_rj_nav_focus} == 1",
+              "label": "Show the pressed arrow on F5-F8",
+              "type": "toggle",
+              "content": [
+                "id_rj_nav_echo",
+                0,
+                24
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Lights & Power",
+          "content": [
+            {
+              "label": "Effect lights on",
+              "type": "toggle",
+              "content": [
+                "id_rj_fx_on",
+                0,
+                5
+              ]
+            },
+            {
+              "label": "Hard RGB off after idle (minutes, 0 = never)",
+              "type": "range",
+              "options": [
+                0,
+                240
+              ],
+              "content": [
+                "id_rj_rgb_off_min",
+                0,
+                6
+              ]
+            },
+            {
+              "label": "Keep keys typed while wireless reconnects after sleep",
+              "type": "toggle",
+              "content": [
+                "id_rj_wake_replay",
+                0,
+                20
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "customKeycodes": [
+    {
+      "name": "BT1",
+      "title": "Bluetooth host 1 (hold 3s to pair)",
+      "shortName": "BT1"
+    },
+    {
+      "name": "BT2",
+      "title": "Bluetooth host 2 (hold 3s to pair)",
+      "shortName": "BT2"
+    },
+    {
+      "name": "BT3",
+      "title": "Bluetooth host 3 (hold 3s to pair)",
+      "shortName": "BT3"
+    },
+    {
+      "name": "2.4G",
+      "title": "2.4 GHz dongle (hold 3s to pair)",
+      "shortName": "2.4G"
+    },
+    {
+      "name": "USB",
+      "title": "Wired / USB mode",
+      "shortName": "USB"
+    },
+    {
+      "name": "Cable/2.4G",
+      "title": "Toggle wired / 2.4 GHz dongle (hold 3s when switching to the dongle to pair it)",
+      "shortName": "Cable/2.4G"
+    },
+    {
+      "name": "BT_VOL",
+      "title": "Unused",
+      "shortName": "BT_VOL"
+    },
+    {
+      "name": "LOW_D",
+      "title": "Unused",
+      "shortName": "LOW_D"
+    },
+    {
+      "name": "COM_D",
+      "title": "Unused",
+      "shortName": "COM_D"
+    },
+    {
+      "name": "HIGH_D",
+      "title": "Unused",
+      "shortName": "HIGH_D"
+    },
+    {
+      "name": "Sleep",
+      "title": "Toggle keep-awake (disables RGB/sleep timeouts, hard RGB cutoff still applies)",
+      "shortName": "Sleep"
+    },
+    {
+      "name": "RGB_TEST",
+      "title": "Unused",
+      "shortName": "RGB_TEST"
+    },
+    {
+      "name": "Prof+",
+      "title": "Next profile",
+      "shortName": "Prof+"
+    },
+    {
+      "name": "Public",
+      "title": "Switch to Public profile",
+      "shortName": "Public"
+    },
+    {
+      "name": "Personal",
+      "title": "Switch to Personal profile",
+      "shortName": "Personal"
+    },
+    {
+      "name": "Gaming",
+      "title": "Switch to Gaming profile",
+      "shortName": "Gaming"
+    },
+    {
+      "name": "FX Tog",
+      "title": "Toggle effect lights on the first row (indicators stay)",
+      "shortName": "FX Tog"
+    },
+    {
+      "name": "Play Anim",
+      "title": "Play the startup animation now (preview)",
+      "shortName": "Play Anim"
+    }
+  ],
+  "layouts": {
+    "keymap": [
+      [
+        "0,0",
+        {
+          "x": 0.5
+        },
+        "0,1",
+        "0,2",
+        "0,3",
+        "0,4",
+        {
+          "x": 0.5
+        },
+        "0,5",
+        "0,6",
+        "0,7",
+        "0,8",
+        {
+          "x": 0.5
+        },
+        "0,9",
+        "0,10",
+        "0,11",
+        "0,12",
+        {
+          "x": 0.5
+        },
+        "0,14"
+      ],
+      [
+        "1,0",
+        "1,1",
+        "1,2",
+        "1,3",
+        "1,4",
+        "1,5",
+        "1,6",
+        "1,7",
+        "1,8",
+        "1,9",
+        "1,10",
+        "1,11",
+        "1,12",
+        {
+          "w": 2
+        },
+        "1,13",
+        "1,14"
+      ],
+      [
+        {
+          "w": 1.5
+        },
+        "2,0",
+        "2,1",
+        "2,2",
+        "2,3",
+        "2,4",
+        "2,5",
+        "2,6",
+        "2,7",
+        "2,8",
+        "2,9",
+        "2,10",
+        "2,11",
+        "2,12",
+        {
+          "w": 1.5
+        },
+        "2,13",
+        "2,14"
+      ],
+      [
+        {
+          "w": 1.75
+        },
+        "3,0",
+        "3,1",
+        "3,2",
+        "3,3",
+        "3,4",
+        "3,5",
+        "3,6",
+        "3,7",
+        "3,8",
+        "3,9",
+        "3,10",
+        "3,11",
+        {
+          "w": 2.25
+        },
+        "3,13",
+        "3,14"
+      ],
+      [
+        {
+          "w": 2.25
+        },
+        "4,0",
+        "4,1",
+        "4,2",
+        "4,3",
+        "4,4",
+        "4,5",
+        "4,6",
+        "4,7",
+        "4,8",
+        "4,9",
+        "4,10",
+        {
+          "w": 1.75
+        },
+        "4,11",
+        "4,13",
+        "4,14"
+      ],
+      [
+        {
+          "w": 1.25
+        },
+        "5,0",
+        {
+          "w": 1.25
+        },
+        "5,1",
+        {
+          "w": 1.25
+        },
+        "5,2",
+        {
+          "w": 6.25
+        },
+        "5,5",
+        {
+          "w": 1.5
+        },
+        "5,9",
+        {
+          "w": 1.5
+        },
+        "5,10",
+        "5,12",
+        "5,13",
+        "5,14"
+      ]
+    ]
+  }
+}
