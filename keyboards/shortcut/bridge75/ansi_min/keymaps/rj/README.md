@@ -29,7 +29,6 @@ Everything besides the firmware lives in `rj/` at the repo root:
   `keymap.c` fails the build when the numbers move).
 * `rj/preview/`: the light preview page. `dump_fx.c` / `dump_frames.c` in `rj/hosttest/` render
   the real effects and startup animations to `fx.json` / `anims.json`.
-* `rj/strip_comments.py`: code style is no comments unless one is really needed.
 
 ## Flash
 
