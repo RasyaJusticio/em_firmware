@@ -1,4 +1,5 @@
 // Copyright 2024 Su (@isuua)
+// Copyright 2025 emolitor (github.com/emolitor)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "quantum.h"
@@ -111,6 +112,13 @@ void lpwr_set_timeout_manual(bool enable) {
 
 bool lpwr_get_timeout_manual(void) {
     return manual_timeout;
+}
+
+// battery critical — force sleep
+void md_receive_bat_critical_cb(void) {
+    if (lpwr_get_state() == LPWR_NORMAL) {
+        manual_timeout = true;
+    }
 }
 
 // 2.4g mode, host state
